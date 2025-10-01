@@ -15,7 +15,7 @@ start(Id, Grp) ->
 
 init(Id, Grp, Master) ->
     Self = self(),
-    lists:foreach(fun(X) -> X ! {join, Master, Self} end, Grp),
+    Grp ! {join, Master, Self},
     receive
         {view, [Leader|Slaves], Group2} ->
             Master ! {view, Group2},
@@ -33,13 +33,13 @@ leader(Id, Master, Slaves, Group) ->
             Group2 = lists:append(Group, [Wrk]),
             bcast(Id, {view, [self()|Slaves2], Group2}, Slaves2),
             Master ! {view, Group2},
-            leader(Id, Master, Slaves, Group);
+            leader(Id, Master, Slaves2, Group2);
         stop ->
             ok
     end.    
 
-bcast(_, {_, Msg}, Slaves) ->
-    lists:foreach(fun(X) -> X ! {msg, Msg} end, Slaves).
+bcast(_, Msg, Slaves) ->
+    lists:foreach(fun(X) -> X ! Msg end, Slaves).
 
 slave(Id, Master, Leader, Slaves, Group) ->
     receive 
